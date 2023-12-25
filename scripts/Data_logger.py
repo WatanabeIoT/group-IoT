@@ -9,9 +9,9 @@ import re
 DEBUG = False
 DEBUG_DATA = "0359 -54dBm 0.322mV T:25.33 H:25.81 LUX:295.84 X:-0.004 Y:-0.008 Z:0.976 SW:1001"
 
-SPREADSHEET_KEY_FILE = "../secret/spreadsheet-id.txt"
+SPREADSHEET_KEY_FILE = "../secrets/spreadsheet-id.txt"
 # WORKSHEET_NAME = "Sheet2"
-JSON_FILE = "../secret/project-watanabe-iot-b839ad323930.json"
+JSON_FILE = "../secrets/project-watanabe-iot-b839ad323930.json"
 DATA_LENGTH_NO_HF = 9
 DATA_LENGTH_WITH_HF = 10
 FREQUENCY = 10
