@@ -14,7 +14,7 @@ SPREADSHEET_KEY_FILE = "../secrets/spreadsheet-id.txt"
 JSON_FILE = "../secrets/project-watanabe-iot-b839ad323930.json"
 DATA_LENGTH_NO_HF = 9
 DATA_LENGTH_WITH_HF = 10
-FREQUENCY = 10
+FREQUENCY = 100
 
 # スプレッドシートにデータを書き込む関数を定義する
 def write_to_sheet(ss_key, ser_num, data):
