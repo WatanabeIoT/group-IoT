@@ -1,3 +1,5 @@
+# by Hirai
+
 import os
 import serial
 import serial.tools.list_ports
@@ -16,40 +18,22 @@ SPREADSHEET_KEY_FILE = "../secrets/spreadsheet-id.txt"
 JSON_FILE = "../secrets/project-watanabe-iot-b839ad323930.json"
 DATA_LENGTH_NO_HF = 9
 DATA_LENGTH_WITH_HF = 10
-FREQUENCY = 100 #for test
-
-def how_dimensions(data_list):
-    # データリストの次元を返す関数
-    # https://qiita.com/osorezugoing/items/39d20a785a0600c492f7
-    if not isinstance(data_list[0],list):
-        return 1
-    elif not isinstance(data_list[0][0],list):
-        return 2
-    else: 
-        return -1
-
-def gen2darray(data):
-    # 1次元リストを2次元リストに変換する関数
-    data2d = []
-    for el in data:
-        data2d.append([el])
-    return data2d
+FREQUENCY = 2 #for test
 
 # スプレッドシートにデータを書き込む関数を定義する
 def write_to_sheet(ss_key, ser_num, data):
     # 送信機のシリアルナンバーに対応するシートを開く。
     # print(data)
     if len(data[0]) == DATA_LENGTH_NO_HF:
-        worksheet = client.open_by_key(ss_key).worksheet(ser_num)
+        sheetname = ser_num
     else:
-        worksheet = client.open_by_key(ss_key).worksheet(ser_num + "_HF")
-    #if how_dimensions(data) == 1:
-    #    data_2d = gen2darray(data)
+        sheetname = ser_num + "_HF"
+    worksheet = client.open_by_key(ss_key).worksheet(sheetname)
+
     #データを追加
     worksheet.append_rows(data)
+    print("Data have been written in Spreadsheet:",now, sheetname)
     return "ok"
- 
-
 
 def load_ss_key():
     with open(SPREADSHEET_KEY_FILE) as f:
@@ -117,7 +101,7 @@ if __name__ == "__main__":
         print("#################################")
         print("# Data recording is in progress #")
         print("#################################")
-
+        
         # スクリプトを常時実行する
         try:
             cnt = 1
@@ -138,56 +122,55 @@ if __name__ == "__main__":
 
                     # 現在の日時と整形後のデータを連結
                     now_data = [now] + data
+
                     # ログを一時的に保存するためのファイルを開く。
-                    if not os.path.isfile("./temp.csv"):
-                        with open("./temp.csv", mode='w') as f:
+                    if not os.path.isfile("./temp_" + ser_num + ".csv"):
+                        with open("./temp_" + ser_num + ".csv", mode='w') as f:
                             print(*now_data, file = f)
                     else:
-                        with open("./temp.csv", mode='a') as f:
+                        with open("./temp_" + ser_num + ".csv", mode='a') as f:
                             print(*now_data, file = f)
-
-                    # print(ser_num, now_data)
+                    
+                    # 現在一時ファイルに蓄積されているデータ数をカウント
+                    with open("./temp_" + ser_num + ".csv", mode='r') as f:
+                        num_acc_data = len(f.readlines())
+                    
                     # スプレッドシートへの書き込みを行う。
-                    if cnt == FREQUENCY:
-                        ss_key = load_ss_key()
-                        print("Data received:", now, "(output to SpreadSheet)", " #:", cnt)
+                    if num_acc_data >= FREQUENCY:
 
+                        # 対応するSpreadsheetのキーを取得
+                        ss_key = load_ss_key()
+                        
                         # 一時ファイルの中身を読み込む
                         temp_data = []
-                        with open("./temp.csv", mode='r') as f:
+                        with open("./temp_" + ser_num + ".csv", mode='r') as f:
                             temp_data = f.readlines()
-                            """
-
-                            reader = csv.reader(f)
-                            for row in reader:
-                                temp_data.append(row)
-                            """
-                        
-                        print(temp_data)    # for debug
                         
                         # temp_dataの中身を整形
                         # temp_dataは2次元リストになる
                         temp_data_shaped = []
                         for td in temp_data:
-                            td_shaped = list(td.split())           # 空白区切りしたものをリスト化
-                            temp_data_shaped.append(td_shaped)    
+                            td_shaped = list(td.split())                                   # 空白区切りしたものをリスト化
+                            td_shaped = [td_shaped[0]] + list(map(float, td_shaped[1:]))   # 先頭以外をfloatに変換
+                            temp_data_shaped.append(td_shaped)
+
+                        # Spreadsheetにデータを書き込み
                         result = write_to_sheet(ss_key, ser_num, temp_data_shaped)
+
                         if result == "ok":
-                            # 一時ファイルの中身を削除
-                            with open("./temp.csv", mode='w') as f:
+                            # 書き込みが正常に行われた場合は一時ファイルの中身を削除
+                            with open("./temp_" + ser_num + ".csv", mode='w') as f:
                                 pass
-                            # カウンターをリセット
-                            cnt = 1
                         else:
+                            # 書き込みに失敗したら終了
                             print("Fail to write data...")
                             exit(1)
                     else:
-                        print("Data received:", now, " #:",  cnt)
-                        cnt += 1
-
+                        #print("Data received:", now, " #:",  cnt)
+                        pass
         except KeyboardInterrupt:
             print("stop")
-            # スプレッドシートにデータを書き込む
+            exit(1)
     else:
         print("#################################")
         print("#           DEBUG               #")
@@ -205,6 +188,3 @@ if __name__ == "__main__":
         now_data = [now] + data
         print("ser_num, now_data", ser_num, now_data)
         print(now_data)
-
-
-
