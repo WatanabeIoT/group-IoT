@@ -16,6 +16,7 @@ DEBUG_DATA = "0359 -54dBm 0.322mV T:25.33 H:25.81 LUX:295.84 X:-0.004 Y:-0.008 Z
 SPREADSHEET_KEY_FILE = "../secrets/spreadsheet-id.txt"
 # WORKSHEET_NAME = "Sheet2"
 JSON_FILE = "../secrets/project-watanabe-iot-b839ad323930.json"
+LOG_DIR = "../log/"
 DATA_LENGTH_NO_HF = 9
 DATA_LENGTH_WITH_HF = 10
 FREQUENCY = 2 #for test
@@ -101,7 +102,7 @@ if __name__ == "__main__":
         print("#################################")
         print("# Data recording is in progress #")
         print("#################################")
-        
+
         # スクリプトを常時実行する
         try:
             cnt = 1
@@ -124,15 +125,15 @@ if __name__ == "__main__":
                     now_data = [now] + data
 
                     # ログを一時的に保存するためのファイルを開く。
-                    if not os.path.isfile("./temp_" + ser_num + ".csv"):
-                        with open("./temp_" + ser_num + ".csv", mode='w') as f:
+                    if not os.path.isfile(LOG_DIR + "temp_" + ser_num + ".csv"):
+                        with open(LOG_DIR + "temp_" + ser_num + ".csv", mode='w') as f:
                             print(*now_data, file = f)
                     else:
-                        with open("./temp_" + ser_num + ".csv", mode='a') as f:
+                        with open(LOG_DIR + "temp_" + ser_num + ".csv", mode='a') as f:
                             print(*now_data, file = f)
                     
                     # 現在一時ファイルに蓄積されているデータ数をカウント
-                    with open("./temp_" + ser_num + ".csv", mode='r') as f:
+                    with open(LOG_DIR + "temp_" + ser_num + ".csv", mode='r') as f:
                         num_acc_data = len(f.readlines())
                     
                     # スプレッドシートへの書き込みを行う。
@@ -143,7 +144,7 @@ if __name__ == "__main__":
                         
                         # 一時ファイルの中身を読み込む
                         temp_data = []
-                        with open("./temp_" + ser_num + ".csv", mode='r') as f:
+                        with open(LOG_DIR + "temp_" + ser_num + ".csv", mode='r') as f:
                             temp_data = f.readlines()
                         
                         # temp_dataの中身を整形
@@ -159,7 +160,7 @@ if __name__ == "__main__":
 
                         if result == "ok":
                             # 書き込みが正常に行われた場合は一時ファイルの中身を削除
-                            with open("./temp_" + ser_num + ".csv", mode='w') as f:
+                            with open(LOG_DIR + "/temp_" + ser_num + ".csv", mode='w') as f:
                                 pass
                         else:
                             # 書き込みに失敗したら終了
