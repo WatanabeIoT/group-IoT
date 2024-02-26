@@ -19,7 +19,7 @@ JSON_FILE = "../secrets/project-watanabe-iot-b839ad323930.json"
 LOG_DIR = "../log/"
 DATA_LENGTH_NO_HF = 9
 DATA_LENGTH_WITH_HF = 10
-FREQUENCY = 2 #for test
+FREQUENCY = 500 #for test
 
 # スプレッドシートにデータを書き込む関数を定義する
 def write_to_sheet(ss_key, ser_num, data):
