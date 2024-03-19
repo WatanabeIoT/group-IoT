@@ -32,6 +32,9 @@ class MySvc (win32serviceutil.ServiceFramework):
     _svc_description_ = "descriptiooooooon" # TODO: 説明考える。
 
     def __init__(self,args):
+        # 実行中のData_logger.pyが存在するディレクトリに移動する。
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
+        
         win32serviceutil.ServiceFramework.__init__(self, args) 
         self._stop_event = win32event.CreateEvent(None, 0, 0, None)
 
