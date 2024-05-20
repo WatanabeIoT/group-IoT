@@ -1,0 +1,5 @@
+secrets/
+scripts/temp.txt
+scripts/temp.csv
+scripts/__pycache__/
+log/
