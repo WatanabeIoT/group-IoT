@@ -10,6 +10,7 @@ import re
 import win32serviceutil
 import win32service
 import win32event
+import time
 #import socket
 
 #import csv
@@ -24,7 +25,8 @@ JSON_FILE = "../secrets/project-watanabe-iot-b839ad323930.json"
 LOG_DIR = "../log/"
 DATA_LENGTH_NO_HF = 9
 DATA_LENGTH_WITH_HF = 10
-FREQUENCY = 500 #for test
+FREQUENCY = 10 #for test
+MAX_RETRY = 20
 
 class MySvc (win32serviceutil.ServiceFramework):
     _svc_name_ = "iot-service"              # TODO: 名前決める。
@@ -58,23 +60,61 @@ class MySvc (win32serviceutil.ServiceFramework):
 
     # スプレッドシートにデータを書き込む関数を定義する
     def write_to_sheet(self, ss_key, ser_num, data):
-        # 送信機のシリアルナンバーに対応するシートを開く。
-        # print(data)
-        if len(data[0]) == DATA_LENGTH_NO_HF:
-            sheetname = ser_num
-        else:
-            sheetname = ser_num + "_HF"
-        worksheet = self.client.open_by_key(ss_key).worksheet(sheetname)
+        num_retry = 0
+        error_flag = 0
+        max_retry = MAX_RETRY
 
-        #データを追加
-        worksheet.append_rows(data)
+        # 正常に書き込みができるまで、max_retry回再試行する。
+        while num_retry <= MAX_RETRY:
+            num_retry += 1
+
+            # 送信機のシリアルナンバーに対応するシートを開く。
+            # print(data)
+            if len(data[0]) == DATA_LENGTH_NO_HF:
+                sheetname = ser_num
+            else:
+                sheetname = ser_num + "_HF"
+
+            try:        
+                worksheet = self.client.open_by_key(ss_key).worksheet(sheetname)
+            except Exception as e:
+                # Spreadsheetを開けなかった場合
+                error_flag = 1
+                with open(LOG_DIR + "error.log", "a") as f:
+                    print("Error:fail to open spreadsheet.", file = f)
+                    print("Message:" + str(e), file = f)
+                time.sleep(1)
+                continue # 後続の処理をskipしてループを継続
+            try:
+                #データを追加
+                # TODO:データの上書き処理を実装（特定の行数まで行ったら上書きする）
+                worksheet.append_rows(data)
+            except Exception as e:
+                # データの追加に失敗した場合
+                error_flag = 1
+                with open(LOG_DIR + "error.log", "a") as f:
+                    print("Error:fail to add new data.", file = f)
+                    print("Message:" + str(e), file = f)
+                time.sleep(1)
+                continue # 後続の処理をskipしてループを継続
+
+            # 現在の日時を取得
+            dt_now = datetime.datetime.now()
+            now = dt_now.strftime('%Y年%m月%d日%H:%M:%S')
+
+            print("Data have been written in Spreadsheet:",now, sheetname)
+
+            # 正常に書き込みが完了した場合は、一時ファイルの中身を削除
+            with open(LOG_DIR + "/temp_" + ser_num + ".csv", mode='w') as f:
+                pass
+            error_flag = 0  # リセット
+            break
         
-        # 現在の日時を取得
-        dt_now = datetime.datetime.now()
-        now = dt_now.strftime('%Y年%m月%d日%H:%M:%S')
-
-        print("Data have been written in Spreadsheet:",now, sheetname)
-        return "ok"
+        # while loopを抜けてもerrorが解消していない場合
+        if error_flag:
+            with open(LOG_DIR + "error.log", "a") as f:
+                print("Program stopped after " + str(max_retry) + " retry.", file = f)
+            exit(1)
 
     def load_ss_key(self):
         with open(SPREADSHEET_KEY_FILE) as f:
@@ -190,19 +230,10 @@ class MySvc (win32serviceutil.ServiceFramework):
 
                     # Spreadsheetにデータを書き込み
                     result = self.write_to_sheet(ss_key, ser_num, temp_data_shaped)
-
-                    if result == "ok":
-                        # 書き込みが正常に行われた場合は一時ファイルの中身を削除
-                        with open(LOG_DIR + "/temp_" + ser_num + ".csv", mode='w') as f:
-                            pass
-                    else:
-                        # 書き込みに失敗したら終了
-                        with open("error.log", "w"):
-                            print("Fail to write data...")
-                        exit(1)
                 else:
                     #print("Data received:", now, " #:",  cnt)
                     pass
+
 
 def shape_data(raw):
     """
