@@ -75,16 +75,21 @@ class MySvc (win32serviceutil.ServiceFramework):
             else:
                 sheetname = ser_num + "_HF"
 
-            try:        
+            try:
                 worksheet = self.client.open_by_key(ss_key).worksheet(sheetname)
             except Exception as e:
                 # Spreadsheetを開けなかった場合
+                
+                # フラグを立てログを記録
                 error_flag = 1
                 with open(LOG_DIR + "error.log", "a") as f:
                     print("Error:fail to open spreadsheet.", file = f)
                     print("Message:" + str(e), file = f)
-                time.sleep(1)
-                continue # 後続の処理をskipしてループを継続
+                
+                # 60秒待機
+                time.sleep(60)
+                continue 
+            # 後続の処理をskipしてループを継続
             try:
                 #データを追加
                 # TODO:データの上書き処理を実装（特定の行数まで行ったら上書きする）
@@ -95,7 +100,7 @@ class MySvc (win32serviceutil.ServiceFramework):
                 with open(LOG_DIR + "error.log", "a") as f:
                     print("Error:fail to add new data.", file = f)
                     print("Message:" + str(e), file = f)
-                time.sleep(1)
+                time.sleep(60)
                 continue # 後続の処理をskipしてループを継続
 
             # 現在の日時を取得
